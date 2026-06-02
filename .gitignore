@@ -1,0 +1,17 @@
+# Generated dashboard contains your real spend figures & project names — never commit it
+usage-dashboard.html
+*.local.html
+
+# ccusage raw dumps if you save any
+*.ccusage.json
+cc_*.json
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
