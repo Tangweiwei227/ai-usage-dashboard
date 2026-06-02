@@ -1,0 +1,50 @@
+name: Release
+
+# Auto-create a GitHub Release whenever a version tag (v*) is pushed.
+# The release body is the matching section pulled from CHANGELOG.md.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Extracting notes for version $VERSION"
+          # Print lines between the matching '## [VERSION]' heading and the next '## [' heading.
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" {grab=1; next}
+            grab && /^## \[/ {exit}
+            grab && /^\[[^]]+\]:[[:space:]]/ {exit}
+            grab {print}
+          ' CHANGELOG.md > release_notes.md
+          # Trim leading/trailing blank lines.
+          sed -i -e '/./,$!d' release_notes.md
+          awk 'NF{p=NR} {a[NR]=$0} END{for(i=1;i<=p;i++)print a[i]}' release_notes.md > tmp && mv tmp release_notes.md
+          # Fall back to a generic message if the section is empty.
+          if [ ! -s release_notes.md ]; then
+            echo "Release $GITHUB_REF_NAME" > release_notes.md
+          fi
+          echo "----- release notes -----"
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release_notes.md \
+            --verify-tag

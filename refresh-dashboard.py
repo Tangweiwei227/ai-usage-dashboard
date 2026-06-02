@@ -64,8 +64,8 @@ def decode_project(dirname):
         return dirname[:40]
     return '/'.join(parts[-2:])
 
-def run_ccusage(args, extra=None):
-    cmd = ['npx', '-y', 'ccusage@latest'] + args + ['--json'] + (extra or [])
+def run_ccusage(args):
+    cmd = ['npx', '-y', 'ccusage@latest'] + args + ['--json']
     print('  $', ' '.join(cmd))
     try:
         out = subprocess.run(cmd, capture_output=True, text=True)
@@ -93,7 +93,6 @@ def main():
         sys.exit(f'template.html not found at {TEMPLATE}')
 
     # ccusage reads from CLAUDE_CONFIG_DIR if set; honour --claude-dir the same way.
-    env_extra = []
     if args.claude_dir:
         os.environ['CLAUDE_CONFIG_DIR'] = str(claude_dir)
 
