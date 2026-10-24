@@ -8,8 +8,9 @@ A single-file, offline dashboard that shows **how much your AI coding usage woul
 
 ## Features
 
-- 📊 **Overview** — total cost, tokens, daily average, peak day, and a 30-day forecast; monthly trend, model split, daily detail, project & model tables.
-- 📈 **Token trends** — stacked monthly tokens by model, top-model lines, and a 4-type token mix (input / output / cache-write / cache-read).
+- 📊 **Overview** — total cost, tokens, daily average, peak day, and a 30-day forecast; monthly trend by agent, model split, daily detail, project & model tables.
+- 🤖 **Agent dimension** — global `All / Agent` filter, top-agent spend breakdown, per-agent monthly cost/tokens, model rows scoped by agent.
+- 📈 **Token trends** — stacked monthly tokens by model, monthly tokens by agent, top-model lines, and a 4-type token mix (input / output / cache-write / cache-read).
 - 💰 **Pricing (editable)** — per-model unit prices you can edit; the dashboard recomputes cost live and forecasts next-30-day spend. Defaults to **official list prices**; `--infer-prices` backs out your effective rates.
 - 🌗 Dark / light theme · 🌐 English / 中文 · 💱 USD ⇄ CNY with editable rate.
 - ⬇️ Export charts as PNG, tables as CSV, or print to PDF — all offline.

@@ -57,6 +57,8 @@
   .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--panel)}
   .seg button{border:none;background:none;color:var(--muted);padding:6px 12px;font-size:12px;cursor:pointer;font-weight:500}
   .seg button.on{background:var(--accent);color:#fff}
+  .pill{display:inline-block;font-size:10px;line-height:1;padding:3px 6px;border-radius:999px;border:1px solid var(--border);background:var(--panel2);color:var(--muted);margin-right:6px;vertical-align:middle}
+  .pill.agent{font-size:9px}
   .iconbtn{background:var(--panel);border:1px solid var(--border);color:var(--txt);
     border-radius:8px;padding:6px 11px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px}
   .iconbtn:hover{border-color:var(--accent)}
@@ -148,6 +150,7 @@
     <div class="ctrls">
       <div class="seg" id="langSeg"><button data-l="en" class="on">EN</button><button data-l="zh">中</button></div>
       <div class="seg" id="curSeg"><button data-c="USD" class="on">$ USD</button><button data-c="CNY">¥ CNY</button></div>
+      <div class="seg" id="agentSeg"></div>
       <input class="rate" id="rate" value="7.15" title="USD→CNY">
       <button class="iconbtn" id="theme"></button>
       <button class="iconbtn" id="print"></button>
@@ -182,7 +185,7 @@
       <div class="card">
         <h2><span class="lt"><span class="dot"></span><span id="tModelH"></span></span><button class="mini" data-csv="model">⬇CSV</button></h2>
         <input class="search" id="modelSearch">
-        <table id="tModel"><thead><tr><th id="thModelName"></th><th class="sortable" data-k="t" id="thModelT"><span class="arr"></span></th><th class="sortable on" data-k="c" id="thModelC"><span class="arr">▼</span></th><th id="thModelPct"></th></tr></thead><tbody></tbody></table>
+        <table id="tModel"><thead><tr><th id="thModelName"></th><th id="thModelAgent"></th><th class="sortable" data-k="t" id="thModelT"><span class="arr"></span></th><th class="sortable on" data-k="c" id="thModelC"><span class="arr">▼</span></th><th id="thModelPct"></th></tr></thead><tbody></tbody></table>
       </div>
     </div>
     <div class="note" id="ovNote"></div>
@@ -195,6 +198,7 @@
     </div>
     <div class="grid">
       <div class="card"><h2><span class="lt"><span class="dot"></span><span id="cLineH"></span></span><button class="mini" data-png="line">⬇PNG</button></h2><canvas id="cTokLine" height="150"></canvas></div>
+      <div class="card"><h2><span class="lt"><span class="dot"></span><span id="cAgentTokH"></span></span><button class="mini" data-png="agentTok">⬇PNG</button></h2><canvas id="cTokAgent" height="150"></canvas></div>
       <div class="card"><h2><span class="lt"><span class="dot"></span><span id="cKindH"></span></span><button class="mini" data-png="kind">⬇PNG</button></h2><canvas id="cTokKind" height="150"></canvas></div>
     </div>
     <div class="note" id="tokNote"></div>
@@ -252,9 +256,10 @@ const DATA = {
  meta:{start:"2024-11-01", end:"2025-01-31", activeDays:9, generated:"demo", demo:true, priceMode:"official"},
  totals:{cost:42.50, tokens:12500000},
  months:["2024-11","2024-12","2025-01"],
+ agents:["Codex","Claude"],
  models:[
-  {n:"example-opus",c:30.00,t:8000000},{n:"example-gpt",c:8.00,t:3000000},
-  {n:"example-mini",c:4.50,t:1500000}
+  {n:"example-opus",a:"Claude",c:18.00,t:5000000},{n:"example-opus",a:"Codex",c:12.00,t:3000000},
+  {n:"[openclaw]example-gpt",a:"Codex",c:8.00,t:3000000},{n:"example-mini",a:"Claude",c:4.50,t:1500000}
  ],
  monthly:[
   {m:"2024-11",cost:10.00,tok:3000000},{m:"2024-12",cost:12.00,tok:3500000},{m:"2025-01",cost:20.50,tok:6000000}
@@ -265,21 +270,52 @@ const DATA = {
   {"date":"2025-01-08","cost":7.0},{"date":"2025-01-15","cost":4.5},{"date":"2025-01-22","cost":6.0},{"date":"2025-01-29","cost":3.0}
  ],
  projects:[
-  {n:"demo-project-alpha",s:12,t:7000000,c:24.00},
-  {n:"demo-project-beta",s:5,t:3500000,c:12.50},
-  {n:"demo-scripts",s:3,t:2000000,c:6.00}
+  {n:"demo-project-alpha",a:"Claude",s:12,t:7000000,c:24.00},
+  {n:"demo-project-beta",a:"Codex",s:5,t:3500000,c:12.50},
+  {n:"demo-scripts",a:"Codex",s:3,t:2000000,c:6.00}
  ],
  tokByModel:[
   {n:"example-opus",d:[1800000,2200000,4000000]},
   {n:"example-gpt",d:[900000,1000000,1100000]},
   {n:"example-mini",d:[300000,300000,900000]}
  ],
+ tokByAgent:[
+  {n:"Claude",d:[1800000,2500000,3200000]},
+  {n:"Codex",d:[1200000,1000000,2800000]}
+ ],
+ monthByAgent:[
+  {n:"Claude",d:[6.00,7.20,9.30]},
+  {n:"Codex",d:[4.00,4.80,11.20]}
+ ],
  tokKind:{input:1500000,output:900000,cacheWrite:2100000,cacheRead:8000000},
  defaultPrices:[
-  {n:"example-opus",in:300000,out:600000,cw:1100000,cr:6000000,rec:30.00,p:[15,75,18.75,1.5]},
-  {n:"example-gpt",in:1000000,out:200000,cw:0,cr:1800000,rec:8.00,p:[1.25,10,0,0.125]},
-  {n:"example-mini",in:200000,out:100000,cw:0,cr:1200000,rec:4.50,p:[0.3,1.2,0,0.03]}
- ]
+  {n:"example-opus",a:"Claude",in:300000,out:400000,cw:700000,cr:3600000,rec:18.00,p:[15,75,18.75,1.5]},
+  {n:"example-opus",a:"Codex",in:0,out:200000,cw:400000,cr:2400000,rec:12.00,p:[15,75,18.75,1.5]},
+  {n:"[openclaw]example-gpt",a:"Codex",in:1000000,out:200000,cw:0,cr:1800000,rec:8.00,p:[1.25,10,0,0.125]},
+  {n:"example-mini",a:"Claude",in:200000,out:100000,cw:0,cr:1200000,rec:4.50,p:[0.3,1.2,0,0.03]}
+ ],
+ byAgent:{
+  Claude:{
+   totals:{cost:22.50,tokens:6500000},
+   models:[{n:"example-opus",a:"Claude",c:18.00,t:5000000},{n:"example-mini",a:"Claude",c:4.50,t:1500000}],
+   monthly:[{m:"2024-11",cost:6.00,tok:1800000},{m:"2024-12",cost:7.20,tok:2500000},{m:"2025-01",cost:9.30,tok:2200000}],
+   daily:[{"date":"2024-11-05","cost":2.0},{"date":"2024-11-20","cost":4.0},{"date":"2024-12-03","cost":3.2},{"date":"2024-12-15","cost":2.3},{"date":"2024-12-28","cost":1.7},{"date":"2025-01-08","cost":3.5},{"date":"2025-01-15","cost":2.1},{"date":"2025-01-22","cost":2.8},{"date":"2025-01-29","cost":0.9}],
+   projects:[{n:"demo-project-alpha",a:"Claude",s:12,t:7000000,c:24.00}],
+   tokByModel:[{n:"example-opus",a:"Claude",d:[1400000,1900000,1700000]},{n:"example-mini",a:"Claude",d:[400000,600000,500000]}],
+   tokKind:{input:800000,output:420000,cacheWrite:1300000,cacheRead:3980000},
+   defaultPrices:[{n:"example-opus",a:"Claude",in:300000,out:400000,cw:700000,cr:3600000,rec:18.00,p:[15,75,18.75,1.5]},{n:"example-mini",a:"Claude",in:200000,out:100000,cw:0,cr:1200000,rec:4.50,p:[0.3,1.2,0,0.03]}]
+  },
+  Codex:{
+   totals:{cost:20.00,tokens:6000000},
+   models:[{n:"example-opus",a:"Codex",c:12.00,t:3000000},{n:"[openclaw]example-gpt",a:"Codex",c:8.00,t:3000000}],
+   monthly:[{m:"2024-11",cost:4.00,tok:1200000},{m:"2024-12",cost:4.80,tok:1000000},{m:"2025-01",cost:11.20,tok:3800000}],
+   daily:[{"date":"2024-11-05","cost":1.2},{"date":"2024-11-20","cost":2.8},{"date":"2024-12-03","cost":1.8},{"date":"2024-12-15","cost":2.2},{"date":"2024-12-28","cost":0.8},{"date":"2025-01-08","cost":3.5},{"date":"2025-01-15","cost":2.4},{"date":"2025-01-22","cost":3.2},{"date":"2025-01-29","cost":2.1}],
+   projects:[{n:"demo-project-beta",a:"Codex",s:5,t:3500000,c:12.50},{n:"demo-scripts",a:"Codex",s:3,t:2000000,c:6.00}],
+   tokByModel:[{n:"example-opus",a:"Codex",d:[400000,300000,2300000]},{n:"[openclaw]example-gpt",a:"Codex",d:[800000,700000,500000]}],
+   tokKind:{input:700000,output:480000,cacheWrite:800000,cacheRead:4020000},
+   defaultPrices:[{n:"example-opus",a:"Codex",in:0,out:200000,cw:400000,cr:2400000,rec:12.00,p:[15,75,18.75,1.5]},{n:"[openclaw]example-gpt",a:"Codex",in:1000000,out:200000,cw:0,cr:1800000,rec:8.00,p:[1.25,10,0,0.125]}]
+  }
+ }
 };
 /* ===DASHBOARD-DATA-END=== */
 
@@ -289,15 +325,16 @@ const I18N={
   title:"🧮 AI Usage Dashboard · API-Equivalent Cost",
   sub:"Cost of your AI usage, priced per model. Parses Claude Code session logs via ccusage. \"Recorded\" cost comes from your logs; the Pricing tab lets you edit unit prices and recompute.",
   theme_d:"🌙 Dark", theme_l:"☀️ Light", print:"🖨 Print/PDF",
+  agentAll:"All",
   tabOverview:"📊 Overview", tabTokens:"📈 Token Trends", tabPricing:"💰 Pricing (editable)",
   kCost:"Total cost", kTok:"Total tokens", kAvg:"Avg / active day", kAvgSub:"per active day",
   kPeak:"Peak day", kProj:"Next-30-day forecast",
-  kProjSub:r=>`run-rate · ${r}/day`, kCostSub:r=>`≈ ${r}`, kTokSub:r=>`incl. cache-read ${r}`,
-  cMonth:"Monthly cost", cModel:"Cost by model", cDaily:"Daily cost",
+  kProjSub:r=>`run-rate · ${r}/day`, kCostSub:(r,a)=>a?`≈ ${r} · ${a}`:`≈ ${r}`, kTokSub:r=>`incl. cache-read ${r}`,
+  cMonth:"Monthly cost by agent", cModel:"Cost by model", cDaily:"Daily cost",
   tProj:"By project", tModel:"By model",
-  thName:"Name", thSess:"Sessions", thTok:"Tokens", thCost:"Cost", thPct:"%",
+  thName:"Name", thAgent:"Agent", thSess:"Sessions", thTok:"Tokens", thCost:"Cost", thPct:"%",
   searchProj:"Search projects…", searchModel:"Search models…",
-  cStack:"Monthly tokens by model (stacked, incl. cache)", cLine:"Top models · monthly tokens", cKind:"Token mix (4 types)",
+  cStack:"Monthly tokens by model (stacked, incl. cache)", cLine:"Top models · monthly tokens", cAgentTok:"Monthly tokens by agent", cKind:"Token mix (4 types)",
   tokNote:"<b>Tokens = 4 types</b>: input / output / cache-write / cache-read. Cache-read usually dominates total volume but is the cheapest — that's where the savings are. Click legend items to toggle a model.",
   recalc:"🔄 Recompute", reset:"↺ Reset to defaults", exportPrice:"⬇ Export prices CSV",
   priceTitle:cur=>`Pricing config (unit price = ${cur} per million tokens, editable)`,
@@ -320,15 +357,16 @@ const I18N={
   title:"🧮 AI 用量看板 · API 等价成本",
   sub:"按各模型 API 价格折算你的 AI 用量成本。通过 ccusage 解析 Claude Code 会话日志。「记录成本」来自你的日志，「计费逻辑」页可改单价重算。",
   theme_d:"🌙 暗色", theme_l:"☀️ 亮色", print:"🖨 打印/PDF",
+  agentAll:"全部",
   tabOverview:"📊 概览", tabTokens:"📈 模型 Token 曲线", tabPricing:"💰 计费逻辑（可改价）",
   kCost:"API 等价总成本", kTok:"总 Token", kAvg:"日均成本", kAvgSub:"按活跃天",
   kPeak:"最贵单日", kProj:"未来 30 天预测",
-  kProjSub:r=>`近30天速率 · 日均${r}`, kCostSub:r=>`≈ ${r}`, kTokSub:r=>`含缓存读 ${r}`,
-  cMonth:"按月成本趋势", cModel:"模型成本占比", cDaily:"每日成本明细",
+  kProjSub:r=>`近30天速率 · 日均${r}`, kCostSub:(r,a)=>a?`≈ ${r} · ${a}`:`≈ ${r}`, kTokSub:r=>`含缓存读 ${r}`,
+  cMonth:"按 Agent 月度成本", cModel:"模型成本占比", cDaily:"每日成本明细",
   tProj:"按项目拆分", tModel:"按模型明细",
-  thName:"名称", thSess:"会话", thTok:"Token", thCost:"成本", thPct:"占比",
+  thName:"名称", thAgent:"Agent", thSess:"会话", thTok:"Token", thCost:"成本", thPct:"占比",
   searchProj:"搜索项目…", searchModel:"搜索模型…",
-  cStack:"按月 · 各模型 Token 用量（堆叠，含缓存）", cLine:"主力模型 Token 月度曲线", cKind:"Token 构成（四类合计）",
+  cStack:"按月 · 各模型 Token 用量（堆叠，含缓存）", cLine:"主力模型 Token 月度曲线", cAgentTok:"按 Agent 月度 Token", cKind:"Token 构成（四类合计）",
   tokNote:"<b>Token 含四类</b>：输入 / 输出 / 缓存写入 / 缓存读取。缓存读取通常占总量最大但单价最低，是省钱关键。点上方图例可隐藏/显示某模型。",
   recalc:"🔄 按当前价重算", reset:"↺ 恢复默认价", exportPrice:"⬇ 导出价表 CSV",
   priceTitle:cur=>`计费配置（单价 = ${cur} / 百万 token，可直接编辑）`,
@@ -353,7 +391,7 @@ let pref=JSON.parse(localStorage.getItem(LS_PREF)||'{}');
 const navZh=(navigator.language||'').toLowerCase().startsWith('zh');
 let LANG=pref.lang||(navZh?'zh':'en'), CUR=pref.cur||'USD', RATE=pref.rate||(DATA.meta.defaultRate||7.15), THEME=pref.theme||'dark';
 function t(k){return I18N[LANG][k];}
-function savePref(){localStorage.setItem(LS_PREF,JSON.stringify({lang:LANG,cur:CUR,rate:RATE,theme:THEME}));}
+function savePref(){localStorage.setItem(LS_PREF,JSON.stringify({lang:LANG,cur:CUR,rate:RATE,theme:THEME,agent:AGENT}));}
 
 const fmt=n=>n>=1e9?(n/1e9).toFixed(2)+'B':n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':(''+Math.round(n));
 function money(n){const v=CUR==='CNY'?n*RATE:n;const s=CUR==='CNY'?'¥':'$';
@@ -366,11 +404,24 @@ function cssv(v){return getComputedStyle(document.body).getPropertyValue(v).trim
 function applyChartTheme(){Chart.defaults.color=cssv('--muted');Chart.defaults.font.family='-apple-system,PingFang SC,sans-serif';}
 const grid=()=>({grid:{color:cssv('--border')},ticks:{color:cssv('--muted')}});
 
-function recent30(){
+let AGENT=(pref.agent&&((DATA.byAgent&&DATA.byAgent[pref.agent])||pref.agent==='all'))?pref.agent:'all';
+function activeData(){return AGENT==='all'?DATA:(DATA.byAgent&&DATA.byAgent[AGENT]?DATA.byAgent[AGENT]:DATA);}
+function currentAgents(){return (DATA.agents&&DATA.agents.length?DATA.agents:[...new Set((DATA.models||[]).map(m=>m.a).filter(Boolean))]);}
+function recent30(data){
   const end=new Date(DATA.meta.end);const start=new Date(end);start.setDate(end.getDate()-30);
-  return DATA.daily.filter(d=>{const dt=new Date(d.date);return dt>start&&dt<=end;}).reduce((a,b)=>a+b.cost,0);
+  return (data.daily||[]).filter(d=>{const dt=new Date(d.date);return dt>start&&dt<=end;}).reduce((a,b)=>a+b.cost,0);
 }
-const RECENT30=recent30();
+function renderModelName(name){
+  const m=/^\[([^\]]+)\]\s*(.+)$/.exec(name||'');
+  if(m&&m[1].toLowerCase()==='openclaw')return `<span class="pill">${m[1]}</span>${m[2]}`;
+  return name||'-';
+}
+function topAgentBreakdown(){
+  const rows=(DATA.monthByAgent||[]).map(r=>({n:r.n,c:(r.d||[]).reduce((a,b)=>a+b,0)})).filter(r=>r.c>0);
+  if(!rows.length)return '';
+  const total=rows.reduce((a,b)=>a+b.c,0)||1;
+  return rows.sort((a,b)=>b.c-a.c).slice(0,3).map(r=>`${r.n} ${(r.c/total*100).toFixed(0)}%`).join(' · ');
+}
 
 function animateNum(el,to,render){
   const dur=700,t0=performance.now();
@@ -378,54 +429,58 @@ function animateNum(el,to,render){
   requestAnimationFrame(step);
 }
 function renderKPIs(animate){
-  const T=DATA.totals;
+  const A=activeData(), T=A.totals, r30=recent30(A);
   const set=(id,to,r)=>{const el=document.getElementById(id);if(animate)animateNum(el,to,r);else el.textContent=r(to);};
   set('kCost',T.cost,v=>money(v));
-  document.getElementById('kCostSub').textContent=t('kCostSub')(CUR==='USD'?('¥'+Math.round(T.cost*RATE).toLocaleString()):('$'+Math.round(T.cost).toLocaleString()));
+  document.getElementById('kCostSub').textContent=t('kCostSub')(CUR==='USD'?('¥'+Math.round(T.cost*RATE).toLocaleString()):('$'+Math.round(T.cost).toLocaleString()),AGENT==='all'?topAgentBreakdown():'');
   set('kTok',T.tokens,v=>fmt(v));
-  document.getElementById('kTokSub').textContent=t('kTokSub')(fmt(DATA.tokKind.cacheRead));
-  set('kAvg',T.cost/DATA.meta.activeDays,v=>money(v));
-  const peak=DATA.daily.reduce((a,b)=>b.cost>a.cost?b:a);
+  document.getElementById('kTokSub').textContent=t('kTokSub')(fmt((A.tokKind||{}).cacheRead||0));
+  set('kAvg',T.cost/Math.max(1,DATA.meta.activeDays),v=>money(v));
+  const peak=(A.daily||[]).reduce((a,b)=>b.cost>a.cost?b:a,{cost:0,date:'-'});
   set('kPeak',peak.cost,v=>money(v));
   document.getElementById('kPeakD').textContent=peak.date;
-  set('kProj',RECENT30,v=>money(v));
-  document.getElementById('kProjSub').textContent=t('kProjSub')(money(RECENT30/30));
+  set('kProj',r30,v=>money(v));
+  document.getElementById('kProjSub').textContent=t('kProjSub')(money(r30/30));
 }
 
 function buildSparks(){
   ['spCost','spTok'].forEach(id=>{const ex=Chart.getChart(id);if(ex)ex.destroy();});
+  const A=activeData();
   const mk=(id,arr,col)=>new Chart(document.getElementById(id),{type:'line',
     data:{labels:arr.map((_,i)=>i),datasets:[{data:arr,borderColor:col,borderWidth:1.5,
       pointRadius:0,tension:.4,fill:true,backgroundColor:col+'22'}]},
     options:{responsive:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
       scales:{x:{display:false},y:{display:false}},animation:false}});
-  mk('spCost',DATA.monthly.map(m=>m.cost),'#d97757');
-  mk('spTok',DATA.monthly.map(m=>m.tok),'#6e9bff');
+  mk('spCost',(A.monthly||[]).map(m=>m.cost),'#d97757');
+  mk('spTok',(A.monthly||[]).map(m=>m.tok),'#6e9bff');
 }
 
 let monthSel=null, modelSel=null;
 function buildMonth(){
   if(charts.month)charts.month.destroy();
-  charts.month=new Chart(cMonth,{type:'bar',data:{labels:DATA.monthly.map(m=>m.m),
-    datasets:[{data:DATA.monthly.map(m=>m.cost),
-      backgroundColor:DATA.monthly.map(m=>monthSel&&monthSel!==m.m?cssv('--border'):'#d97757'),borderRadius:6}]},
-    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>money(c.raw)}}},
-    onClick:(e,el)=>{if(el.length){const m=DATA.monthly[el[0].index].m;monthSel=monthSel===m?null:m;buildMonth();buildDaily();}},
-    scales:{x:grid(),y:{...grid(),ticks:{color:cssv('--muted'),callback:v=>moneyShort(v)}}}}});
+  const labels=DATA.months||[];
+  const datasets=(AGENT==='all'?(DATA.monthByAgent||[]):[{n:AGENT,d:(activeData().monthly||[]).map(x=>x.cost)}]).map((r,i)=>({
+    label:r.n,data:r.d,stack:'agent',backgroundColor:PAL[i%PAL.length],borderRadius:6
+  }));
+  charts.month=new Chart(cMonth,{type:'bar',data:{labels,datasets},
+    options:{plugins:{legend:{display:AGENT==='all',position:'bottom',labels:{boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${money(c.raw)}`}}},
+    onClick:(e,el)=>{if(el.length){const m=labels[el[0].index];monthSel=monthSel===m?null:m;buildMonth();buildDaily();}},
+    scales:{x:{...grid(),stacked:AGENT==='all'},y:{...grid(),stacked:AGENT==='all',ticks:{color:cssv('--muted'),callback:v=>moneyShort(v)}}}}});
 }
 function buildModelDoughnut(){
   if(charts.model)charts.model.destroy();
-  const top=DATA.models.slice(0,6),rest=DATA.models.slice(6).reduce((a,b)=>a+b.c,0);
+  const A=activeData();
+  const top=(A.models||[]).slice(0,6),rest=(A.models||[]).slice(6).reduce((a,b)=>a+b.c,0);
   const labels=[...top.map(m=>m.n)];const data=[...top.map(m=>m.c)];
   if(rest>0){labels.push(t('all')==='全部'?'其他':'Other');data.push(rest);}
   charts.model=new Chart(cModel,{type:'doughnut',data:{labels,
     datasets:[{data,backgroundColor:PAL,borderColor:cssv('--panel'),borderWidth:2}]},
     options:{cutout:'58%',plugins:{legend:{position:'right',labels:{boxWidth:10,font:{size:10}}},
-      tooltip:{callbacks:{label:c=>c.label+': '+money(c.raw)+' ('+(c.raw/DATA.totals.cost*100).toFixed(1)+'%)'}}}}});
+      tooltip:{callbacks:{label:c=>c.label+': '+money(c.raw)+' ('+(c.raw/Math.max(0.01,A.totals.cost)*100).toFixed(1)+'%)'}}}}});
 }
 function buildDaily(){
   if(charts.daily)charts.daily.destroy();
-  let d=DATA.daily;
+  let d=activeData().daily||[];
   if(monthSel)d=d.filter(x=>x.date.startsWith(monthSel));
   document.getElementById('dCrumb').innerHTML=monthSel?`· ${monthSel} <a id="dReset">${t('showAll')}</a>`:'';
   document.getElementById('mCrumb').innerHTML=monthSel?t('crumbSel')(monthSel):'';
@@ -442,9 +497,10 @@ const sortState={proj:{k:'c',dir:-1},model:{k:'c',dir:-1}};
 function renderProj(){
   const tb=tProj.querySelector('tbody');tb.innerHTML='';
   const q=projSearch.value.trim().toLowerCase();
-  let rows=DATA.projects.filter(p=>p.n.toLowerCase().includes(q));
+  const A=activeData();
+  let rows=(A.projects||[]).filter(p=>(p.n||'').toLowerCase().includes(q));
   const{k,dir}=sortState.proj;rows.sort((a,b)=>(a[k]-b[k])*dir);
-  const max=Math.max(...DATA.projects.map(p=>p.c),1);
+  const max=Math.max(...(A.projects||[]).map(p=>p.c),1);
   rows.forEach(p=>{const tr=document.createElement('tr');
     tr.innerHTML=`<td class="name"><span class="bar" style="width:${Math.max(4,p.c/max*70)}px"></span>${p.n}</td><td>${p.s}</td><td>${fmt(p.t)}</td><td>${money(p.c)}</td>`;
     tb.appendChild(tr);});
@@ -452,11 +508,12 @@ function renderProj(){
 function renderModelTable(){
   const tb=tModel.querySelector('tbody');tb.innerHTML='';
   const q=modelSearch.value.trim().toLowerCase();
-  let rows=DATA.models.filter(m=>m.n.toLowerCase().includes(q));
+  const A=activeData();
+  let rows=(A.models||[]).filter(m=>(`${m.n} ${m.a||''}`).toLowerCase().includes(q));
   const{k,dir}=sortState.model;rows.sort((a,b)=>(a[k]-b[k])*dir);
   rows.forEach(m=>{const tr=document.createElement('tr');
     if(m.n===modelSel)tr.className='sel';
-    tr.innerHTML=`<td class="name">${m.n}</td><td>${fmt(m.t)}</td><td>${money(m.c)}</td><td class="pct">${(m.c/DATA.totals.cost*100).toFixed(1)}%</td>`;
+    tr.innerHTML=`<td class="name">${renderModelName(m.n)}</td><td>${m.a||'-'}</td><td>${fmt(m.t)}</td><td>${money(m.c)}</td><td class="pct">${(m.c/Math.max(0.01,A.totals.cost)*100).toFixed(1)}%</td>`;
     tr.onclick=()=>{modelSel=modelSel===m.n?null:m.n;renderModelTable();if(tokensBuilt)applyModelFilter();};
     tb.appendChild(tr);});
 }
@@ -473,19 +530,25 @@ function wireSort(tableId,which,render){
 let tokensBuilt=false;
 function buildTokens(){
   if(tokensBuilt){return;} tokensBuilt=true;
-  const otherLbl=LANG==='zh'?'其他':'Other';
+  const A=activeData();
   charts.stack=new Chart(cTokStack,{type:'bar',data:{labels:DATA.months,
-    datasets:DATA.tokByModel.map((m,i)=>({label:m.n,data:m.d,backgroundColor:PAL[i%PAL.length],stack:'s'}))},
+    datasets:(A.tokByModel||[]).map((m,i)=>({label:m.n,data:m.d,backgroundColor:PAL[i%PAL.length],stack:'s'}))},
     options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}},
       tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
     scales:{x:{...grid(),stacked:true},y:{...grid(),stacked:true,ticks:{color:cssv('--muted'),callback:v=>fmt(v)}}}}});
   charts.line=new Chart(cTokLine,{type:'line',data:{labels:DATA.months,
-    datasets:DATA.tokByModel.slice(0,5).map((m,i)=>({label:m.n,data:m.d,borderColor:PAL[i],
+    datasets:(A.tokByModel||[]).slice(0,5).map((m,i)=>({label:m.n,data:m.d,borderColor:PAL[i],
       backgroundColor:'transparent',tension:.3,pointRadius:3}))},
     options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:9}}},
       tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
     scales:{x:grid(),y:{...grid(),ticks:{color:cssv('--muted'),callback:v=>fmt(v)}}}}});
-  const K=DATA.tokKind;
+  const agentSeries=(AGENT==='all'?(DATA.tokByAgent||[]):[{n:AGENT,d:(A.monthly||[]).map(m=>m.tok)}]);
+  charts.agentTok=new Chart(cTokAgent,{type:'bar',data:{labels:DATA.months,
+    datasets:agentSeries.map((m,i)=>({label:m.n,data:m.d,backgroundColor:PAL[i%PAL.length],stack:'a'}))},
+    options:{plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+    scales:{x:{...grid(),stacked:true},y:{...grid(),stacked:true,ticks:{color:cssv('--muted'),callback:v=>fmt(v)}}}}});
+  const K=A.tokKind||{input:0,output:0,cacheWrite:0,cacheRead:0};
   const kindLbl=LANG==='zh'?['输入','输出','缓存写入','缓存读取']:['Input','Output','Cache-write','Cache-read'];
   charts.kind=new Chart(cTokKind,{type:'doughnut',data:{labels:kindLbl,
     datasets:[{data:[K.input,K.output,K.cacheWrite,K.cacheRead],
@@ -502,10 +565,15 @@ function applyModelFilter(){
 }
 
 let MODELS=loadPrices();
-function loadPrices(){try{const s=JSON.parse(localStorage.getItem(LS_PRICE));
-  if(s&&s.length===DATA.defaultPrices.length)return DATA.defaultPrices.map((m,i)=>({...m,p:s[i].p}));}catch(e){}
-  return DATA.defaultPrices.map(m=>({...m,p:[...m.p]}));}
-function savePrices(){localStorage.setItem(LS_PRICE,JSON.stringify(MODELS.map(m=>({p:m.p}))));
+function loadPrices(){
+  const base=(activeData().defaultPrices&&activeData().defaultPrices.length)?activeData().defaultPrices:DATA.defaultPrices;
+  let s={};try{s=JSON.parse(localStorage.getItem(LS_PRICE)||'{}')||{};}catch(e){}
+  return base.map(m=>{const k=`${m.a||'all'}::${m.n}`;return({...m,p:Array.isArray(s[k])?[...s[k]]:[...m.p]});});
+}
+function savePrices(){
+  let s={};try{s=JSON.parse(localStorage.getItem(LS_PRICE)||'{}')||{};}catch(e){}
+  MODELS.forEach(m=>{s[`${m.a||'all'}::${m.n}`]=[...m.p];});
+  localStorage.setItem(LS_PRICE,JSON.stringify(s));
   const h=document.getElementById('saveHint');h.textContent=t('savedLocal');setTimeout(()=>h.textContent='',1500);}
 function calcCost(m){return (m.in*m.p[0]+m.out*m.p[1]+m.cw*m.p[2]+m.cr*m.p[3])/1e6;}
 let priceBuilt=false;
@@ -515,7 +583,7 @@ function renderPrice(){
   let totTok=0;
   MODELS.forEach((m,i)=>{const calc=calcCost(m);totTok+=m.in+m.out+m.cw+m.cr;
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="name">${m.n}</td>
+    tr.innerHTML=`<td class="name">${m.a&&AGENT==='all'?`<span class="pill agent">${m.a}</span>`:''}${renderModelName(m.n)}</td>
       <td>${fmt(m.in)}</td><td>${fmt(m.out)}</td><td>${fmt(m.cw)}</td><td>${fmt(m.cr)}</td>
       ${m.p.map((v,j)=>`<td><input class="price" data-i="${i}" data-j="${j}" value="${v}"></td>`).join('')}
       <td>${money(m.rec)}</td><td class="calc">${money(calc)}</td>`;
@@ -526,32 +594,33 @@ function renderPrice(){
   updateTotals();
 }
 function updateTotals(){
-  let totCalc=0,totRec=DATA.totals.cost;
+  let totCalc=0,totRec=activeData().totals.cost;
   document.querySelectorAll('#tPrice tbody tr').forEach((tr,i)=>{const calc=calcCost(MODELS[i]);totCalc+=calc;
     tr.querySelector('.calc').textContent=money(calc);});
   pRec.textContent=money(totRec);
   const diff=totCalc-totRec;
   pCalc.innerHTML=money(totCalc)+` <span class="${Math.abs(diff)<Math.max(1,totRec*0.01)?'diff-ok':'diff-bad'}" style="font-size:11px">(${diff>=0?'+':''}${money(diff)})</span>`;
   const scale=totRec?totCalc/totRec:1;
-  document.getElementById('pjRecent').textContent=money(RECENT30);
+  const r30=recent30(activeData());
+  document.getElementById('pjRecent').textContent=money(r30);
   document.getElementById('pjScale').textContent='×'+scale.toFixed(3);
-  document.getElementById('pjFuture').textContent=money(RECENT30*scale);
+  document.getElementById('pjFuture').textContent=money(r30*scale);
   savePrices();
 }
 document.getElementById('recalc').onclick=()=>{renderPrice();};
-document.getElementById('reset').onclick=()=>{MODELS=DATA.defaultPrices.map(m=>({...m,p:[...m.p]}));
+document.getElementById('reset').onclick=()=>{MODELS=((activeData().defaultPrices&&activeData().defaultPrices.length)?activeData().defaultPrices:DATA.defaultPrices).map(m=>({...m,p:[...m.p]}));
   localStorage.removeItem(LS_PRICE);renderPrice();const h=document.getElementById('saveHint');h.textContent=t('savedReset');setTimeout(()=>h.textContent='',1500);};
 
 function dl(name,content,type){const b=content instanceof Blob?content:new Blob([content],{type});const u=URL.createObjectURL(b);
   const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 function toCSV(rows){return '﻿'+rows.map(r=>r.map(c=>`"${(''+c).replace(/"/g,'""')}"`).join(',')).join('\n');}
 const CSV={
-  model:()=>[['model','tokens','cost(recorded)','pct%'],...DATA.models.map(m=>[m.n,m.t,m.c,(m.c/DATA.totals.cost*100).toFixed(2)])],
-  proj:()=>[['project','sessions','tokens','cost(recorded)'],...DATA.projects.map(p=>[p.n,p.s,p.t,p.c])],
+  model:()=>{const A=activeData();return [['model','agent','tokens','cost(recorded)','pct%'],...(A.models||[]).map(m=>[m.n,m.a||AGENT,m.t,m.c,(m.c/Math.max(0.01,A.totals.cost)*100).toFixed(2)])];},
+  proj:()=>{const A=activeData();return [['project','agent','sessions','tokens','cost(recorded)'],...(A.projects||[]).map(p=>[p.n,p.a||AGENT,p.s,p.t,p.c])];},
   price:()=>[['model','input_tok','output_tok','cacheW_tok','cacheR_tok','in/M','out/M','cw/M','cr/M','recorded','recompute'],
     ...MODELS.map(m=>[m.n,m.in,m.out,m.cw,m.cr,...m.p,m.rec,calcCost(m).toFixed(4)])]
 };
-document.querySelectorAll('[data-csv]').forEach(b=>b.onclick=()=>{const k=b.dataset.csv;dl(`usage-${k}.csv`,toCSV(CSV[k]()),'text/csv');});
+document.querySelectorAll('[data-csv]').forEach(b=>b.onclick=()=>{const k=b.dataset.csv;const suf=(AGENT!=='all'&&k!=='price')?`-${AGENT.toLowerCase().replace(/[^a-z0-9]+/g,'-')}`:'';dl(`usage-${k}${suf}.csv`,toCSV(CSV[k]()),'text/csv');});
 document.querySelectorAll('[data-png]').forEach(b=>b.onclick=()=>{const c=charts[b.dataset.png];
   if(c)dl(`chart-${b.dataset.png}.png`,dataURLtoBlob(c.toBase64Image()),'image/png');else alert(t('pngHint'));});
 function dataURLtoBlob(u){const a=u.split(',');const m=a[0].match(/:(.*?);/)[1];const bs=atob(a[1]);
@@ -561,7 +630,7 @@ document.getElementById('print').onclick=()=>{buildTokens();buildPricing();setTi
 function reRenderMoney(){renderKPIs(false);buildMonth();buildModelDoughnut();buildDaily();renderProj();renderModelTable();if(priceBuilt)renderPrice();}
 function rebuildAllCharts(){
   buildSparks();buildMonth();buildModelDoughnut();buildDaily();
-  if(tokensBuilt){['stack','line','kind'].forEach(k=>charts[k]&&charts[k].destroy());tokensBuilt=false;buildTokens();applyModelFilter();}
+  if(tokensBuilt){['stack','line','agentTok','kind'].forEach(k=>charts[k]&&charts[k].destroy());tokensBuilt=false;buildTokens();applyModelFilter();}
 }
 
 // ===== apply language to all static text =====
@@ -578,9 +647,9 @@ function applyLang(){
   S('thProjName',t('thName'));document.getElementById('thProjS').childNodes[0].nodeValue=t('thSess');
   document.getElementById('thProjT').childNodes[0].nodeValue=t('thTok');document.getElementById('thProjC').childNodes[0].nodeValue=t('thCost');
   S('thModelName',t('thName'));document.getElementById('thModelT').childNodes[0].nodeValue=t('thTok');
-  document.getElementById('thModelC').childNodes[0].nodeValue=t('thCost');S('thModelPct',t('thPct'));
+  S('thModelAgent',t('thAgent'));document.getElementById('thModelC').childNodes[0].nodeValue=t('thCost');S('thModelPct',t('thPct'));
   projSearch.placeholder=t('searchProj');modelSearch.placeholder=t('searchModel');
-  S('cStackH',t('cStack'));S('cLineH',t('cLine'));S('cKindH',t('cKind'));
+  S('cStackH',t('cStack'));S('cLineH',t('cLine'));S('cAgentTokH',t('cAgentTok'));S('cKindH',t('cKind'));
   document.getElementById('tokNote').innerHTML=t('tokNote');
   S('recalc',t('recalc'));S('reset',t('reset'));S('exportPrice',t('exportPrice'));
   S('priceTitle',t('priceTitle')(CUR==='CNY'?(LANG==='zh'?'人民币':'CNY'):(LANG==='zh'?'美元':'USD')));
@@ -591,8 +660,8 @@ function applyLang(){
   S('projHint',t('projHint'));S('formulaTitle',t('formulaTitle'));
   document.getElementById('formula').innerHTML=t('formula');
   document.getElementById('priceNote').innerHTML=DATA.meta.priceMode==='inferred'?t('noteInferred'):t('noteOfficial');
-  const m0=DATA.models[0]||{n:'-',c:0};
-  document.getElementById('ovNote').innerHTML=t('ovNote')(m0.n,(m0.c/DATA.totals.cost*100).toFixed(0),money(m0.c),fmt(DATA.tokKind.cacheRead));
+  const A=activeData();const m0=(A.models||[])[0]||{n:'-',c:0};
+  document.getElementById('ovNote').innerHTML=t('ovNote')(m0.n,(m0.c/Math.max(0.01,A.totals.cost)*100).toFixed(0),money(m0.c),fmt((A.tokKind||{}).cacheRead||0));
   document.getElementById('bRangeHost').innerHTML=`<span class="badge">${DATA.meta.start} → ${DATA.meta.end} · ${DATA.meta.activeDays} ${LANG==='zh'?'活跃天':'active days'}</span>`;
   document.getElementById('footer').innerHTML=`${t('footer')}${LANG==='zh'?'生成于 ':'generated '}${DATA.meta.generated}${t('footerUpdate')}<code>python3 refresh-dashboard.py</code>`;
   // demo banner
@@ -604,9 +673,19 @@ function applyLang(){
 }
 
 // ===== controls =====
+function renderAgentSeg(){
+  const wrap=document.getElementById('agentSeg');if(!wrap)return;
+  const list=['all',...currentAgents()];
+  wrap.innerHTML=list.map(a=>`<button data-a="${a}" class="${AGENT===a?'on':''}">${a==='all'?t('agentAll'):a}</button>`).join('');
+  wrap.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    AGENT=b.dataset.a;monthSel=null;modelSel=null;savePref();
+    wrap.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    MODELS=loadPrices();applyLang();renderKPIs(false);renderProj();renderModelTable();if(priceBuilt)renderPrice();rebuildAllCharts();
+  });
+}
 document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>{
   LANG=b.dataset.l;document.querySelectorAll('#langSeg button').forEach(x=>x.classList.toggle('on',x===b));
-  savePref();applyLang();renderKPIs(false);renderProj();renderModelTable();if(priceBuilt)renderPrice();rebuildAllCharts();});
+  savePref();applyLang();renderAgentSeg();renderKPIs(false);renderProj();renderModelTable();if(priceBuilt)renderPrice();rebuildAllCharts();});
 document.querySelectorAll('#curSeg button').forEach(b=>b.onclick=()=>{
   CUR=b.dataset.c;document.querySelectorAll('#curSeg button').forEach(x=>x.classList.toggle('on',x===b));
   savePref();applyLang();reRenderMoney();});
@@ -633,6 +712,7 @@ document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('on',
 document.querySelectorAll('#curSeg button').forEach(b=>b.classList.toggle('on',b.dataset.c===CUR));
 applyTheme();
 applyLang();
+renderAgentSeg();
 renderKPIs(true);
 buildSparks();
 buildMonth();buildModelDoughnut();buildDaily();
